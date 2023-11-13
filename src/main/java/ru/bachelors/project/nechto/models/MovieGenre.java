@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
 
-@Table(name = "move_genre")
+@Table(name = "movie_genre")
 @Data
 @Entity
 @NoArgsConstructor

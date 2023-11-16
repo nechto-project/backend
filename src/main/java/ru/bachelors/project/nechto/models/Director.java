@@ -22,4 +22,14 @@ public class Director {
     private String name;
     @ManyToMany(mappedBy = "directors")
     private List<Movie> movies = new ArrayList<>();
+
+    public Director(String name) {
+        this.name = name;
+    }
+
+    @Override
+    public String toString() {
+        String text = name == null ? "null" : name;
+        return "Director{name = " + text + "}";
+    }
 }

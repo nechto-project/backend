@@ -23,4 +23,14 @@ public class Genre {
     private String name;
     @ManyToMany(mappedBy = "genres")
     private List<Movie> movies = new ArrayList<>();
+
+    public Genre(String name) {
+        this.name = name;
+    }
+
+    @Override
+    public String toString() {
+        String text = name == null ? "null" : name;
+        return "Genre{name = " + text + "}";
+    }
 }

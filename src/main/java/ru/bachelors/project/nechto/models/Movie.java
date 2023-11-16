@@ -26,18 +26,38 @@ public class Movie {
     private double score;
     @Column(name = "poster")
     private String poster;
-    @ManyToMany(cascade = CascadeType.ALL)
+    @ManyToMany()
     @JoinTable(
             name = "movie_genre",
             joinColumns = @JoinColumn(name = "id_genre"),
             inverseJoinColumns = @JoinColumn(name = "id_movie")
     )
     private List<Genre> genres = new ArrayList<>();
-    @ManyToMany(cascade = CascadeType.ALL)
+    @ManyToMany()
     @JoinTable(
             name = "movie_director",
             joinColumns = @JoinColumn(name = "id_director"),
             inverseJoinColumns = @JoinColumn(name = "id_movie")
     )
     private List<Director> directors = new ArrayList<>();
+
+    public Movie(String name,
+                 String description,
+                 double score,
+                 String poster,
+                 List<Genre> genres,
+                 List<Director> directors) {
+        this.name = name;
+        this.description = description;
+        this.score = score;
+        this.poster = poster;
+        this.genres = genres;
+        this.directors = directors;
+    }
+
+    @Override
+    public String toString() {
+        String text = name == null ? "null" : name;
+        return "Movie{name = " + text + "}";
+    }
 }

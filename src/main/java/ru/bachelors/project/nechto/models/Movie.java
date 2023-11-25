@@ -17,7 +17,7 @@ public class Movie {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_movie")
-    private int movieId;
+    private Long movieId;
     @Column(name = "name")
     private String name;
     @Column(name = "description")
@@ -29,15 +29,15 @@ public class Movie {
     @ManyToMany()
     @JoinTable(
             name = "movie_genre",
-            joinColumns = @JoinColumn(name = "id_genre"),
-            inverseJoinColumns = @JoinColumn(name = "id_movie")
+            joinColumns = @JoinColumn(name = "id_movie"),
+            inverseJoinColumns = @JoinColumn(name = "id_genre")
     )
     private List<Genre> genres = new ArrayList<>();
     @ManyToMany()
     @JoinTable(
             name = "movie_director",
-            joinColumns = @JoinColumn(name = "id_director"),
-            inverseJoinColumns = @JoinColumn(name = "id_movie")
+            joinColumns = @JoinColumn(name = "id_movie"),
+            inverseJoinColumns = @JoinColumn(name = "id_director")
     )
     private List<Director> directors = new ArrayList<>();
 

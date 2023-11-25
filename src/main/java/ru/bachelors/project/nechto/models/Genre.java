@@ -18,7 +18,7 @@ public class Genre {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_genre")
-    private int genreId;
+    private Long genreId;
     @Column(name = "name")
     private String name;
     @ManyToMany(mappedBy = "genres")

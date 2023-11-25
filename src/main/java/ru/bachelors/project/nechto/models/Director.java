@@ -17,7 +17,7 @@ public class Director {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_director")
-    private int directorId;
+    private Long directorId;
     @Column(name = "name")
     private String name;
     @ManyToMany(mappedBy = "directors")

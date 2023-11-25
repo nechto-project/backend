@@ -5,6 +5,6 @@ import org.springframework.stereotype.Repository;
 import ru.bachelors.project.nechto.models.Director;
 
 @Repository
-public interface DirectorRepository  extends JpaRepository<Director, Integer> {
+public interface DirectorRepository  extends JpaRepository<Director, Long> {
     Director findByName(String name);
 }

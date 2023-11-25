@@ -5,6 +5,6 @@ import org.springframework.stereotype.Repository;
 import ru.bachelors.project.nechto.models.Genre;
 
 @Repository
-public interface GenreRepository extends JpaRepository<Genre, Integer> {
+public interface GenreRepository extends JpaRepository<Genre, Long> {
     Genre findByName(String name);
 }

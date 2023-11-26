@@ -1,74 +1,118 @@
 package ru.bachelors.project.nechto.service;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import lombok.extern.slf4j.Slf4j;
-import ru.bachelors.project.nechto.dto.Movie;
-import ru.bachelors.project.nechto.dto.Room;
-import ru.bachelors.project.nechto.dto.User;
+import ru.bachelors.project.nechto.dto.UserDto;
 import ru.bachelors.project.nechto.exceptions.RoomNotFoundException;
+import ru.bachelors.project.nechto.models.Genre;
+import ru.bachelors.project.nechto.models.Movie;
+import ru.bachelors.project.nechto.models.Room;
+import ru.bachelors.project.nechto.repositories.GenreRepository;
+import ru.bachelors.project.nechto.repositories.RoomRepository;
 
 @Service
 @Slf4j
 public class RoomService {
-    private final Map<String, Room> rooms = new HashMap<>(); // временно, пока нет бд; (sessionId, Room)
+    RoomRepository roomRepository;
+    GenreRepository genreRepository;
 
-    public String createRoom(User leader) {
+    @Autowired
+    public RoomService(RoomRepository roomRepository, GenreRepository genreRepository) {
+        this.roomRepository = roomRepository;
+        this.genreRepository = genreRepository;
+    }
+
+    public String createRoom(UserDto leader) {
         String sessionId = generateUniqueSessionId();
-        Room room = new Room(sessionId, leader);
-        rooms.put(sessionId, room);
-        log.info("Создана комната, sessionId = " + sessionId);
+        Optional<Room> optionalRoom = roomRepository.findById(sessionId);
+        if(optionalRoom.isPresent()) {
+            log.info("Room already exist: {}", sessionId);
+            return optionalRoom.get().getSessionId();
+        }
+        Room room = new Room(sessionId, leader.userId());
+        roomRepository.save(room);
+        log.info("Created room, sessionId = " + sessionId);
         return sessionId;
     }
 
-    public boolean deleteRoom(String sessionId) {
-        if (rooms.remove(sessionId) != null) {
-            log.info("Удалена комната, sessionId = " + sessionId);
-            return true;
-        }
-        log.error("Не удалось удалить комнату, sessionId = " + sessionId);
-        throw new RoomNotFoundException();
+    public void deleteRoom(String sessionId) {
+        roomRepository.deleteById(sessionId);
     }
 
     public Room getRoomBySessionId(String sessionId) {
-        Room room = rooms.get(sessionId);
-        if (room == null) {
+        Optional<Room> optionalRoom = roomRepository.findById(sessionId);
+        if (optionalRoom.isEmpty()) {
+            log.error("Комната не найдена, sessionId = " + sessionId);
             throw new RoomNotFoundException();
         }
-        return room;
+        return optionalRoom.get();
     }
 
-    public boolean joinRoom(String sessionId, User participant) {
-        Room room = rooms.get(sessionId);
-        if (room != null) {
+    public boolean joinRoom(String sessionId, UserDto participant) {
+        try {
+            Room room = getRoomBySessionId(sessionId);
             log.info("Участник " + participant.userId() + " присоединился к комнате " + sessionId);
-            room.setParticipant(participant);
+            room.setParticipant(participant.userId());
+            roomRepository.save(room);
             return true;
-        } else {
+        } catch (RoomNotFoundException ignored) {
             log.error("Не удалось присоединиться к комнате, sessionId = " + sessionId);
-            throw new RoomNotFoundException();
+            return false;
         }
     }
 
-    public List<Movie> getMoviesByFilters(String filters) {
-        // мок, пока нет базы. Нужно добавить проверку, что в room.getSuggestedMovies() нет дубликатов
-        log.info("Получение из базы списка фильмов по фильтру");
-        List<Movie> movies = new ArrayList<>();
-        for (int i = 1; i <= 100; i++) {
-            Movie movie = new Movie(
-                    "movieName" + i,
-                    "genre" + i,
-                    "movieDirector" + i
-            );
-            movies.add(movie);
+    //    {
+    //      "genres": ["genre1", "genre2"]
+    //    }
+    // пример json строки filters
+    public List<Movie> getMoviesByFilters(String sessionId) {
+        List<Movie> filteredMovies = new ArrayList<>();
+        Room room = getRoomBySessionId(sessionId);
+        List<String> genres = List.of(room.getMovieFilters().split(" "));
+
+        for (String genre : genres) {
+            filteredMovies.addAll(genreRepository.findByName(genre).getMovies());
         }
-        return movies;
+
+        Collections.shuffle(filteredMovies);
+        return filteredMovies.stream().limit(30).toList();
+    }
+
+    public void saveFilters(Room room, String filters) {
+        JSONParser parser = new JSONParser();
+        try {
+            JSONObject jsonObject = (JSONObject) parser.parse(filters);
+
+            // Получение списка строк
+            JSONArray stringListJson = (JSONArray) jsonObject.get("genres");
+
+            // Преобразование JSONArray в List<String>
+            List<String> genreList = new ArrayList<>();
+            for (Object value : stringListJson) {
+                genreList.add((String) value);
+            }
+
+            room.setMovieFilters(String.join(" ", genreList));
+            roomRepository.save(room);
+
+        } catch (ParseException e) {
+            log.info("Ошибка при сохранении фильмов: " + filters);
+            e.printStackTrace();
+        }
     }
 
     private static String generateUniqueSessionId() {

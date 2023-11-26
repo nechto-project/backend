@@ -8,8 +8,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import lombok.extern.slf4j.Slf4j;
-import ru.bachelors.project.nechto.dto.Room;
-import ru.bachelors.project.nechto.dto.User;
+import ru.bachelors.project.nechto.dto.UserDto;
+import ru.bachelors.project.nechto.models.Room;
 import ru.bachelors.project.nechto.service.RoomService;
 
 @RestController
@@ -24,19 +24,19 @@ public class RoomController {
     }
 
     @PostMapping("/create")
-    public String createRoom(@RequestBody User leader) {
+    public String createRoom(@RequestBody UserDto leader) {
         return roomService.createRoom(leader);
     }
 
     @PostMapping("/join/{sessionId}")
     public boolean joinRoom(@PathVariable String sessionId,
-                         @RequestBody User participant) {
+                         @RequestBody UserDto participant) {
         return roomService.joinRoom(sessionId, participant);
     }
 
     @PostMapping("/delete/{sessionId}")
-    public boolean deleteRoom(@PathVariable String sessionId) {
-        return roomService.deleteRoom(sessionId);
+    public void deleteRoom(@PathVariable String sessionId) {
+        roomService.deleteRoom(sessionId);
     }
 
     @PostMapping("/{sessionId}/filters")
@@ -44,6 +44,6 @@ public class RoomController {
                            @RequestBody String filters) {
         log.info("Установка фильтров для комнаты, sessionId " + sessionId);
         Room room = roomService.getRoomBySessionId(sessionId);
-        room.setMovieFilters(filters);
+        roomService.saveFilters(room, filters);
     }
 }

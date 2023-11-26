@@ -14,7 +14,7 @@ public class GenreService {
     private final GenreRepository genreRepository;
 
     public void createGenre(Genre genre) {
-        if(genreRepository.findByName(genre.getName().toString()) != null) {
+        if(genreRepository.findByName(genre.getName()) != null) {
             log.info("Genre already exist: {}", genre);
             return;
         }

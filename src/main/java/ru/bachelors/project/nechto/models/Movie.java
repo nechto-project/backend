@@ -1,10 +1,12 @@
 package ru.bachelors.project.nechto.models;
 
-import ru.bachelors.project.nechto.models.Director;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "movies")
@@ -15,14 +17,47 @@ public class Movie {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_movie")
-    private int movieId;
+    private Long movieId;
     @Column(name = "name")
     private String name;
     @Column(name = "description")
     private String description;
     @Column(name = "score")
     private double score;
-    @JoinColumn(name = "id_director")
-    @ManyToOne
-    private Director director;
+    @Column(name = "poster")
+    private String poster;
+    @ManyToMany()
+    @JoinTable(
+            name = "movie_genre",
+            joinColumns = @JoinColumn(name = "id_movie"),
+            inverseJoinColumns = @JoinColumn(name = "id_genre")
+    )
+    private List<Genre> genres = new ArrayList<>();
+    @ManyToMany()
+    @JoinTable(
+            name = "movie_director",
+            joinColumns = @JoinColumn(name = "id_movie"),
+            inverseJoinColumns = @JoinColumn(name = "id_director")
+    )
+    private List<Director> directors = new ArrayList<>();
+
+    public Movie(String name,
+                 String description,
+                 double score,
+                 String poster,
+                 List<Genre> genres,
+                 List<Director> directors) {
+        this.name = name;
+        this.description = description;
+        this.score = score;
+        this.poster = poster;
+        this.genres = genres;
+        this.directors = directors;
+    }
+
+    @Override
+    public String toString() {
+        String text = name == null ? "null" : name;
+        return "Movie{name = " + text + "}";
+    }
 }

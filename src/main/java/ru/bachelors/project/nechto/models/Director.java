@@ -5,6 +5,9 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Entity
 @Table(name = "directors")
 @Data
@@ -14,11 +17,19 @@ public class Director {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_director")
-    private int directorId;
-    @Column(name = "last_name")
-    private String lastName;
-    @Column(name = "first_name")
-    private String firstName;
-    @Column(name = "father_name")
-    private String fatherName;
+    private Long directorId;
+    @Column(name = "name")
+    private String name;
+    @ManyToMany(mappedBy = "directors")
+    private List<Movie> movies = new ArrayList<>();
+
+    public Director(String name) {
+        this.name = name;
+    }
+
+    @Override
+    public String toString() {
+        String text = name == null ? "null" : name;
+        return "Director{name = " + text + "}";
+    }
 }

@@ -2,9 +2,7 @@ package ru.bachelors.project.nechto.service;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -16,8 +14,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import lombok.extern.slf4j.Slf4j;
+import ru.bachelors.project.nechto.dto.MovieDto;
 import ru.bachelors.project.nechto.dto.UserDto;
 import ru.bachelors.project.nechto.exceptions.RoomNotFoundException;
+import ru.bachelors.project.nechto.models.Director;
 import ru.bachelors.project.nechto.models.Genre;
 import ru.bachelors.project.nechto.models.Movie;
 import ru.bachelors.project.nechto.models.Room;
@@ -79,20 +79,26 @@ public class RoomService {
     //      "genres": ["genre1", "genre2"]
     //    }
     // пример json строки filters
-    public List<Movie> getMoviesByFilters(String sessionId) {
-        List<Movie> filteredMovies = new ArrayList<>();
+    public List<MovieDto> getMoviesByFilters(String sessionId) {
         Room room = getRoomBySessionId(sessionId);
-        List<String> genres = List.of(room.getMovieFilters().split(" "));
+        List<Movie> filteredMovies = room.getMovies();
 
-        for (String genre : genres) {
-            filteredMovies.addAll(genreRepository.findByName(genre).getMovies());
+        List<MovieDto> filteredMoviesDto = new ArrayList<>();
+        for (Movie movie: filteredMovies) {
+            filteredMoviesDto.add(new MovieDto(
+                    movie.getMovieId(),
+                    movie.getName(),
+                    movie.getDescription(),
+                    movie.getScore(),
+                    movie.getPoster(),
+                    movie.getGenres().stream().map(Genre::getName).toArray(String[]::new),
+                    movie.getDirectors().stream().map(Director::getName).toArray(String[]::new)));
         }
 
-        Collections.shuffle(filteredMovies);
-        return filteredMovies.stream().limit(30).toList();
+        return filteredMoviesDto;
     }
 
-    public void saveFilters(Room room, String filters) {
+    public void saveFiltredMovies(Room room, String filters) {
         JSONParser parser = new JSONParser();
         try {
             JSONObject jsonObject = (JSONObject) parser.parse(filters);
@@ -106,7 +112,13 @@ public class RoomService {
                 genreList.add((String) value);
             }
 
-            room.setMovieFilters(String.join(" ", genreList));
+            List<Movie> filteredMovies = new ArrayList<>();
+            for (String genre : genreList) {
+                filteredMovies.addAll(genreRepository.findByName(genre).getMovies());
+            }
+            Collections.shuffle(filteredMovies);
+//            filteredMovies = filteredMovies.stream().limit(30).toList();
+            room.setMovies(filteredMovies.subList(0, 30));
             roomRepository.save(room);
 
         } catch (ParseException e) {

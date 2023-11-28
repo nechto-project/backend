@@ -9,8 +9,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import ru.bachelors.project.nechto.models.Movie;
-import ru.bachelors.project.nechto.models.Room;
+import ru.bachelors.project.nechto.dto.MovieDto;
 import ru.bachelors.project.nechto.service.RoomService;
 
 @RestController
@@ -24,7 +23,7 @@ public class MovieController {
     }
 
     @GetMapping("/{sessionId}")
-    public ResponseEntity<List<Movie>> startMovieSearch(@PathVariable String sessionId) {
+    public ResponseEntity<List<MovieDto>> startMovieSearch(@PathVariable String sessionId) {
         return ResponseEntity.ok().body(roomService.getMoviesByFilters(sessionId));
     }
 }

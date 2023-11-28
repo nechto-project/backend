@@ -42,8 +42,8 @@ public class RoomController {
     @PostMapping("/{sessionId}/filters")
     public void setFiltersToRoom(@PathVariable String sessionId,
                            @RequestBody String filters) {
-        log.info("Установка фильтров для комнаты, sessionId " + sessionId);
+        log.info("Установка фильмов по фильтру для комнаты, sessionId " + sessionId);
         Room room = roomService.getRoomBySessionId(sessionId);
-        roomService.saveFilters(room, filters);
+        roomService.saveFiltredMovies(room, filters);
     }
 }

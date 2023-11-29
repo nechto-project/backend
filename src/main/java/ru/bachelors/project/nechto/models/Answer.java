@@ -21,6 +21,6 @@ public class Answer implements Serializable {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Answer other = (Answer) o;
-        return idMovie == other.idMovie && answer == other.answer;
+        return idMovie == other.idMovie && answer && other.answer;
     }
 }

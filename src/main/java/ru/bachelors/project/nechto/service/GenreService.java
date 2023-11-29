@@ -28,9 +28,6 @@ public class GenreService {
     public List<Genre> findAllGenres() {
         return List.of(
                 new Genre(
-                        1L, "аниме", Collections.emptyList()
-                ),
-                new Genre(
                         6L, "детектив", Collections.emptyList()
                 ),
                 new Genre(

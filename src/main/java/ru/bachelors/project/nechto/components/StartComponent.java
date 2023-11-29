@@ -35,7 +35,7 @@
 //
 //    @Override
 //    public void run(ApplicationArguments args) throws Exception {
-//        for (int i = 8; i < 20; i++) {
+//        for (int i = 1; i <= 20; i++) {
 //            String urlFilms = "https://api.kinopoisk.dev/v1.4/movie?page=" + i +
 //                    "&limit=250" +
 //                    "&selectFields=name" +

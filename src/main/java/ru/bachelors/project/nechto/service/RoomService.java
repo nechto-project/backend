@@ -1,49 +1,48 @@
 package ru.bachelors.project.nechto.service;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
+import lombok.RequiredArgsConstructor;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import lombok.extern.slf4j.Slf4j;
+import ru.bachelors.project.nechto.dto.AnswerDto;
+import ru.bachelors.project.nechto.dto.IsMatch;
 import ru.bachelors.project.nechto.dto.MovieDto;
-import ru.bachelors.project.nechto.dto.UserDto;
 import ru.bachelors.project.nechto.exceptions.RoomNotFoundException;
-import ru.bachelors.project.nechto.models.Director;
-import ru.bachelors.project.nechto.models.Genre;
-import ru.bachelors.project.nechto.models.Movie;
-import ru.bachelors.project.nechto.models.Room;
+import ru.bachelors.project.nechto.models.*;
 import ru.bachelors.project.nechto.repositories.GenreRepository;
+import ru.bachelors.project.nechto.repositories.MovieRepository;
 import ru.bachelors.project.nechto.repositories.RoomRepository;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class RoomService {
-    RoomRepository roomRepository;
-    GenreRepository genreRepository;
+    private final RoomRepository roomRepository;
+    private final GenreRepository genreRepository;
+    private final MovieRepository movieRepository;
 
-    @Autowired
-    public RoomService(RoomRepository roomRepository, GenreRepository genreRepository) {
-        this.roomRepository = roomRepository;
-        this.genreRepository = genreRepository;
-    }
 
-    public String createRoom(UserDto leader) {
+    public String createRoom(String[] genres) {
+        log.info("жанры" + genres.length);
         String sessionId = generateUniqueSessionId();
         Optional<Room> optionalRoom = roomRepository.findById(sessionId);
         if(optionalRoom.isPresent()) {
             log.info("Room already exist: {}", sessionId);
             return optionalRoom.get().getSessionId();
         }
-        Room room = new Room(sessionId, leader.userId());
+
+        List<Movie> filteredMovies = new ArrayList<>();
+        for (String genre : genres) {
+            filteredMovies.addAll(genreRepository.findByName(genre).getMovies());
+        }
+        Collections.shuffle(filteredMovies);
+        Room room = new Room(sessionId, filteredMovies.size() >= 30 ? filteredMovies.subList(0, 30) : filteredMovies);
         roomRepository.save(room);
         log.info("Created room, sessionId = " + sessionId);
         return sessionId;
@@ -62,11 +61,15 @@ public class RoomService {
         return optionalRoom.get();
     }
 
-    public boolean joinRoom(String sessionId, UserDto participant) {
+    public boolean joinRoom(String sessionId) {
         try {
             Room room = getRoomBySessionId(sessionId);
-            log.info("Участник " + participant.userId() + " присоединился к комнате " + sessionId);
-            room.setParticipant(participant.userId());
+            if(room.isJoin()) {
+                log.info("К " + sessionId + " комнате уже подключен пользователь");
+                return false;
+            }
+            log.info("Участник присоединился к комнате " + sessionId);
+            room.setJoin(true);
             roomRepository.save(room);
             return true;
         } catch (RoomNotFoundException ignored) {
@@ -85,14 +88,7 @@ public class RoomService {
 
         List<MovieDto> filteredMoviesDto = new ArrayList<>();
         for (Movie movie: filteredMovies) {
-            filteredMoviesDto.add(new MovieDto(
-                    movie.getMovieId(),
-                    movie.getName(),
-                    movie.getDescription(),
-                    movie.getScore(),
-                    movie.getPoster(),
-                    movie.getGenres().stream().map(Genre::getName).toArray(String[]::new),
-                    movie.getDirectors().stream().map(Director::getName).toArray(String[]::new)));
+            filteredMoviesDto.add(createMovieDto(movie));
         }
 
         return filteredMoviesDto;
@@ -131,5 +127,75 @@ public class RoomService {
         UUID uuid = UUID.randomUUID();
         String shortId = Long.toString(uuid.getMostSignificantBits(), Character.MAX_RADIX);
         return shortId.substring(0, Math.min(shortId.length(), 8));
+    }
+
+    public void setDecision(String sessionId, boolean isLeader, AnswerDto answer) {
+        try {
+            Room room = getRoomBySessionId(sessionId);
+            log.info("Установака ответа" + (isLeader ? "лидера " : "друга ") + answer.answer() + " " + answer.idMovie());
+            ArrayList<Answer> answers = room.getAnswers(isLeader);
+            answers.add(new Answer(answer));
+            room.setAnswer(answers, isLeader);
+            roomRepository.save(room);
+        }
+        catch (Exception e)
+        {
+            throw e;
+        }
+
+
+    }
+
+    public IsMatch isMatch(String sessionId) {
+        try {
+            Room room = getRoomBySessionId(sessionId);
+            ArrayList<Answer> leaderAnswers = room.getAnswers(true);
+            ArrayList<Answer> participantAnswers = room.getAnswers(false);
+            leaderAnswers.retainAll(participantAnswers);
+            if(!leaderAnswers.isEmpty()) {
+                log.info("Произошел Match id фильма = " + leaderAnswers.get(0));
+                int idMovie = leaderAnswers.get(0).getIdMovie();
+                Optional<Movie> optionalMovie = movieRepository.findById(Integer.toUnsignedLong(idMovie));
+                Movie movie;
+                if (optionalMovie.isPresent()) {
+                    movie = optionalMovie.get();
+                    return new IsMatch(true, createMovieDto(movie));
+                }
+                else {
+                    throw new RuntimeException();
+                }
+            }
+            else {
+                int countOfMovies = room.getMovies().size();
+                if (leaderAnswers.size() == countOfMovies && participantAnswers.size() == countOfMovies) {
+                    return new IsMatch(true, null);
+                }
+                return new IsMatch(false, null);
+            }
+        }
+        catch (Exception e) {
+            throw e;
+        }
+    }
+
+    public MovieDto createMovieDto(Movie movie) {
+        return(new MovieDto(
+                movie.getMovieId(),
+                movie.getName(),
+                movie.getDescription(),
+                movie.getScore(),
+                movie.getPoster(),
+                movie.getGenres().stream().map(Genre::getName).toArray(String[]::new),
+                movie.getDirectors().stream().map(Director::getName).toArray(String[]::new)));
+    }
+
+    public Boolean isJoin(String sessionId) {
+        try {
+            Room room = getRoomBySessionId(sessionId);
+            return room.isJoin();
+        }
+        catch (Exception e) {
+            throw e;
+        }
     }
 }

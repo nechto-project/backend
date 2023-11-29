@@ -5,7 +5,7 @@ springdoc:
     path: /api-docs
 spring:
   datasource:
-    url: jdbc:postgresql://7.tcp.eu.ngrok.io:19132/postgres?currentSchema=nechto
+    url: jdbc:postgresql://localhost:5432/postgres?currentSchema=nechto
     username: postgres
     password: qwerty
     driver-class-name: org.postgresql.Driver

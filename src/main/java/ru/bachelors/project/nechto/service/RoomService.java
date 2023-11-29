@@ -37,9 +37,9 @@ public class RoomService {
             return optionalRoom.get().getSessionId();
         }
 
-        List<Movie> filteredMovies = new ArrayList<>();
+        List<Movie> filteredMovies = genreRepository.findByName(genres[0]).getMovies();
         for (String genre : genres) {
-            filteredMovies.addAll(genreRepository.findByName(genre).getMovies());
+            filteredMovies.retainAll(genreRepository.findByName(genre).getMovies());
         }
         Collections.shuffle(filteredMovies);
         Room room = new Room(sessionId, filteredMovies.size() >= 30 ? filteredMovies.subList(0, 30) : filteredMovies);
@@ -82,10 +82,12 @@ public class RoomService {
     //      "genres": ["genre1", "genre2"]
     //    }
     // пример json строки filters
-    public List<MovieDto> getMoviesByFilters(String sessionId) {
+    public List<MovieDto> getMoviesByFilters(String sessionId) throws Exception {
         Room room = getRoomBySessionId(sessionId);
         List<Movie> filteredMovies = room.getMovies();
-
+        if (filteredMovies.isEmpty()) {
+            throw new Exception();
+        }
         List<MovieDto> filteredMoviesDto = new ArrayList<>();
         for (Movie movie: filteredMovies) {
             filteredMoviesDto.add(createMovieDto(movie));

@@ -24,6 +24,11 @@ public class MovieController {
 
     @GetMapping("/{sessionId}")
     public ResponseEntity<List<MovieDto>> startMovieSearch(@PathVariable String sessionId) {
-        return ResponseEntity.ok().body(roomService.getMoviesByFilters(sessionId));
+        try {
+            return ResponseEntity.ok().body(roomService.getMoviesByFilters(sessionId));
+        }
+        catch (Exception e) {
+            return  ResponseEntity.notFound().build();
+        }
     }
 }
